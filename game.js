@@ -112,21 +112,12 @@ Board.prototype.tick = function() {
                var b = this.rows[i+2].blocks[j];
                if (a && a.speed === 0 && a.type === e.type && b && b.speed === 0 && b.type === e.type) {
                   var matching_type = e.type;
-                  e.speed = launch_funcs[matching_type];
-                  a.speed = launch_funcs[matching_type];
-                  b.speed = launch_funcs[matching_type];
-                  e.type = Block.TYPE_DEAD;
-                  a.type = Block.TYPE_DEAD;
-                  b.type = Block.TYPE_DEAD;
-                  e.time = 0;
-                  a.time = 0;
-                  b.time = 0;
+                  launch(e, matching_type);
+                  launch(a, matching_type);
+                  launch(b, matching_type);
                   var extra = i + 3;
                   while (this.rows[extra] && this.rows[extra].blocks[j] && this.rows[extra].blocks[j].speed === 0 && this.rows[extra].blocks[j].type === matching_type) {
-                     this.rows[extra].blocks[j].speed = -8;
-                     this.rows[extra].blocks[j].type = Block.TYPE_DEAD;
-                     this.rows[extra].blocks[j].speed = launch_funcs[matching_type];
-                     this.rows[extra].blocks[j].time = 0;
+                     launch(this.rows[extra].blocks[j], matching_type);
                      extra++;
                   }
                }
@@ -135,6 +126,13 @@ Board.prototype.tick = function() {
       }
    }
    this.changed = 0;
+
+   function launch(x, type) {
+      x.speed = launch_funcs[type];
+      x.type = Block.TYPE_DEAD;
+      x.time = 0;
+      x.fallingState = Block.STATE_LAUNCHING;
+   }
 };
 
 /// Row
@@ -159,9 +157,9 @@ Row.prototype.tick = function(stage) {
       if (typeof e.speed === "function") {
          var speed = -e.speed(e.time);
          e.time++;
-         if (speed >= 1) {
-            speed = 1;
-            e.speed = 1;
+         if (speed >= 0.5) {
+            speed = 0.5;
+            e.speed = 0.5;
          }
       } else {
          speed = e.speed;
@@ -176,6 +174,7 @@ Row.prototype.tick = function(stage) {
       if (i > 0 && e.sprite.position.y >= this.blocks[i-1].sprite.position.y - BLOCK_SIZE) {
          e.sprite.position.y = this.blocks[i-1].sprite.position.y - BLOCK_SIZE;
          e.speed = this.blocks[i-1].speed;
+         e.time = this.blocks[i-1].time;
          e.fallingState = Block.STATE_RESTING;
          changed = 1;
       }

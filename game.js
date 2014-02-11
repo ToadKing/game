@@ -228,6 +228,7 @@ Row.prototype.tick = function(stage) {
       if (i === 0 && e.sprite.position.y >= BLOCK_SIZE * this.board.height - BLOCK_SIZE) {
          e.sprite.position.y = BLOCK_SIZE * this.board.height - BLOCK_SIZE;
          e.speed = 0;
+         e.time = 0;
          e.fallingState = Block.STATE_RESTING;
          changed = 1;
       }
@@ -347,27 +348,38 @@ LaunchGroup.prototype.tick = function() {
 };
 
 LaunchGroup.prototype.addBlock = function(block) {
-   var _ = this;
+   var _this = this;
    if (block.launchGroup !== this) {
       // if already a part of a group, combine them
       if (block.launchGroup) {
-         var oldGroupBlocks = block.launchGroup.blocks;
-         while (oldGroupBlocks.length) {
-            add(oldGroupBlocks.pop());
-         }
+         add_group(block.launchGroup);
       } else {
          add(block);
          for (var i = block.row.blocks.indexOf(block) + 1; block.row.blocks[i] && (block.row.blocks[i].fallingState === Block.STATE_RESTING || (block.row.blocks[i].fallingState === Block.STATE_LAUNCHING && block.row.blocks[i].launchGroup === this)); i++) {
-            add(block.row.blocks[i]);
+            if (block.row.blocks[i].launchGroup && block.row.blocks[i].launchGroup !== this) {
+               add_group(block.row.blocks[i].launchGroup);
+               break;
+            } else {
+               add(block.row.blocks[i]);
+            }
          }
       }
    }
    
+   function add_group(x) {
+      var oldGroupBlocks = x.blocks;
+      while (oldGroupBlocks.length) {
+         add(oldGroupBlocks.pop());
+      }
+   }
+
    function add(x) {
-      x.launchGroup = _;
+      x.launchGroup = _this;
       x.fallingState = Block.STATE_LAUNCHING;
+      x.speed = _this.speed;
+      x.time = _this.time;
       x.sprite.tint = 0xFFFFFF;
-      _.blocks.push(x);
+      _this.blocks.push(x);
    }
 };
 
